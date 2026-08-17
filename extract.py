@@ -14,6 +14,19 @@ else:
     client = Anthropic()
 
 def extract_action_items(transcript: str) -> dict:
+    """
+    Extract action items from meeting transcript using Claude.
+    Returns: {
+        "action_items": [{"task": str, "owner": str, "deadline": str}],
+        "summary": str
+    }
+    """
+    try:
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            messages=[
+                {
                     "role": "user",
                     "content": f"""Analyze this meeting transcript and extract ALL action items.
 
@@ -34,18 +47,81 @@ Return ONLY valid JSON, no other text."""
                 }
             ]
         )
+
+        # Parse response
         response_text = message.content[0].text
+
+        # Try to parse as JSON
         import json
         result = json.loads(response_text)
-        return {"success": True, "action_items": result.get("action_items", []), "summary": result.get("summary", ""), "raw": response_text}
+
+        return {
+            "success": True,
+            "action_items": result.get("action_items", []),
+            "summary": result.get("summary", ""),
+            "raw": response_text
+        }
+
     except Exception as e:
-        return {"success": False, "error": str(e), "action_items": [], "summary": ""}
+        return {
+            "success": False,
+            "error": str(e),
+            "action_items": [],
+            "summary": ""
+        }
 
 def format_slack_message(action_items: list, summary: str) -> dict:
+    """
+    Format action items for Slack message.
+    Returns formatted Slack message payload.
+    """
     if not action_items:
-        return {"text": "No action items found in this meeting.", "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": "❌ No action items detected in this meeting."}}]}
-    blocks = [{"type": "header", "text": {"type": "plain_text", "text": "🎯 Action Items from Meeting", "emoji": True}}, {"type": "section", "text": {"type": "mrkdwn", "text": f"*Summary:* {summary}"}}, {"type": "divider"}]
-    for item in action_items:
-        blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": f"✅ *{item.get('task', 'Task')}*\n👤 Owner: {item.get('owner', 'Unassigned')}\n📅 Deadline: {item.get('deadline', 'ASAP')}"}})
-    return {"text": f"Meeting Summary: {summary}", "blocks": blocks}
+        return {
+            "text": "No action items found in this meeting.",
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "❌ No action items detected in this meeting."
+                    }
+                }
+            ]
+        }
 
+    # Build blocks
+    blocks = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "🎯 Action Items from Meeting",
+                "emoji": True
+            }
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*Summary:* {summary}"
+            }
+        },
+        {
+            "type": "divider"
+        }
+    ]
+
+    # Add each action item
+    for item in action_items:
+        blocks.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"✅ *{item.get('task', 'Task')}*\n👤 Owner: {item.get('owner', 'Unassigned')}\n📅 Deadline: {item.get('deadline', 'ASAP')}"
+            }
+        })
+
+    return {
+        "text": f"Meeting Summary: {summary}",
+        "blocks": blocks
+    }
