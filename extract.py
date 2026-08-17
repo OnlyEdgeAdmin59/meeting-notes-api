@@ -1,15 +1,19 @@
 ﻿import os
 from anthropic import Anthropic
 
-client = Anthropic()
+# Initialize client with API key from environment
+# Try ANTHROPIC_API_KEY first (standard), then fall back to CLAUDE_API_KEY
+api_key = os.getenv("ANTHROPIC_API_KEY")
+if not api_key:
+    api_key = os.getenv("CLAUDE_API_KEY")
+
+if api_key:
+    client = Anthropic(api_key=api_key)
+else:
+    # If no API key found, Anthropic SDK will look for default env vars
+    client = Anthropic()
 
 def extract_action_items(transcript: str) -> dict:
-    try:
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            messages=[
-                {
                     "role": "user",
                     "content": f"""Analyze this meeting transcript and extract ALL action items.
 
@@ -44,3 +48,4 @@ def format_slack_message(action_items: list, summary: str) -> dict:
     for item in action_items:
         blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": f"✅ *{item.get('task', 'Task')}*\n👤 Owner: {item.get('owner', 'Unassigned')}\n📅 Deadline: {item.get('deadline', 'ASAP')}"}})
     return {"text": f"Meeting Summary: {summary}", "blocks": blocks}
+
