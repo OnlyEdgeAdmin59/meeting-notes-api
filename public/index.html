@@ -1,0 +1,132 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Notes Extractor - API Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold gradient-text mb-2">Meeting Notes Extractor</h1>
+                <p class="text-gray-600">Extract action items and send to Slack instantly</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Slack Webhook URL</label>
+                    <input type="text" id="webhookUrl" placeholder="https://hooks.slack.com/services/..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent" />
+                    <p class="text-xs text-gray-500 mt-2">Optional - uses server default if blank</p>
+                </div>
+                <button id="testBtn" class="w-full mb-6 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition">🧪 Test Slack Webhook</button>
+                <div class="border-t border-gray-200 my-6"></div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Meeting Transcript</label>
+                    <textarea id="transcript" placeholder="Paste meeting transcript here... (e.g., 'Alice: Let's ship the dashboard by Friday. Bob: I'll handle the backend. Alice: Great, I'll do the frontend. Who does QA? Bob: I can QA on Monday.')" rows="8" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent font-mono text-sm"></textarea>
+                </div>
+                <button id="extractBtn" class="w-full bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">🚀 Extract & Send to Slack</button>
+                <div id="status" class="mt-6 hidden p-4 rounded-lg"></div>
+                <div id="results" class="mt-6 hidden bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-gray-900 mb-4">📋 Extracted Action Items</h3>
+                    <div id="actionItems"></div>
+                    <div class="mt-4 p-3 bg-blue-50 rounded">
+                        <p class="text-sm text-blue-900"><strong>Summary:</strong> <span id="summary"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center text-sm text-gray-600 mt-8">
+                <p>Meeting Notes API v0.1.0 • Test extraction & Slack integration</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        const transcriptEl = document.getElementById('transcript');
+        const extractBtn = document.getElementById('extractBtn');
+        const testBtn = document.getElementById('testBtn');
+        const statusEl = document.getElementById('status');
+        const resultsEl = document.getElementById('results');
+        const webhookUrlEl = document.getElementById('webhookUrl');
+
+        testBtn.addEventListener('click', async () => {
+            const webhookUrl = webhookUrlEl.value;
+            testBtn.disabled = true;
+            testBtn.textContent = '🔄 Testing...';
+            try {
+                const formData = new FormData();
+                if (webhookUrl) formData.append('webhook_url', webhookUrl);
+                const response = await fetch('/api/test', {method: 'POST', body: formData});
+                const data = await response.json();
+                statusEl.classList.remove('hidden');
+                if (data.success) {
+                    statusEl.className = 'mt-6 p-4 rounded-lg bg-green-50 border border-green-200';
+                    statusEl.innerHTML = '<p class="text-green-900">✅ ' + data.message + '</p>';
+                } else {
+                    statusEl.className = 'mt-6 p-4 rounded-lg bg-red-50 border border-red-200';
+                    statusEl.innerHTML = '<p class="text-red-900">❌ ' + data.error + '</p>';
+                }
+            } catch (error) {
+                statusEl.classList.remove('hidden');
+                statusEl.className = 'mt-6 p-4 rounded-lg bg-red-50 border border-red-200';
+                statusEl.innerHTML = '<p class="text-red-900">❌ Error: ' + error.message + '</p>';
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = '🧪 Test Slack Webhook';
+            }
+        });
+
+        extractBtn.addEventListener('click', async () => {
+            const transcript = transcriptEl.value.trim();
+            const webhookUrl = webhookUrlEl.value;
+            if (!transcript) {
+                statusEl.classList.remove('hidden');
+                statusEl.className = 'mt-6 p-4 rounded-lg bg-yellow-50 border border-yellow-200';
+                statusEl.innerHTML = '<p class="text-yellow-900">⚠️ Please enter a transcript</p>';
+                return;
+            }
+            extractBtn.disabled = true;
+            extractBtn.textContent = '🔄 Processing...';
+            statusEl.classList.add('hidden');
+            resultsEl.classList.add('hidden');
+            try {
+                const formData = new FormData();
+                formData.append('transcript', transcript);
+                if (webhookUrl) formData.append('webhook_url', webhookUrl);
+                const response = await fetch('/api/extract', {method: 'POST', body: formData});
+                const data = await response.json();
+                if (data.success) {
+                    statusEl.classList.remove('hidden');
+                    statusEl.className = 'mt-6 p-4 rounded-lg bg-green-50 border border-green-200';
+                    const slackStatus = data.slack_sent ? '✅ Sent to Slack' : '⚠️ Extraction ok, Slack send failed';
+                    statusEl.innerHTML = '<p class="text-green-900">' + slackStatus + '</p>';
+                    resultsEl.classList.remove('hidden');
+                    const itemsHtml = data.action_items.map(item => '<div class="mb-3 p-3 bg-white rounded border-l-4 border-purple-600"><p class="font-semibold text-gray-900">' + item.task + '</p><p class="text-sm text-gray-600">👤 ' + item.owner + ' • 📅 ' + item.deadline + '</p></div>').join('');
+                    document.getElementById('actionItems').innerHTML = itemsHtml || '<p class="text-gray-600">No action items found</p>';
+                    document.getElementById('summary').textContent = data.summary || 'N/A';
+                } else {
+                    statusEl.classList.remove('hidden');
+                    statusEl.className = 'mt-6 p-4 rounded-lg bg-red-50 border border-red-200';
+                    statusEl.innerHTML = '<p class="text-red-900">❌ Error: ' + data.error + '</p>';
+                }
+            } catch (error) {
+                statusEl.classList.remove('hidden');
+                statusEl.className = 'mt-6 p-4 rounded-lg bg-red-50 border border-red-200';
+                statusEl.innerHTML = '<p class="text-red-900">❌ Error: ' + error.message + '</p>';
+            } finally {
+                extractBtn.disabled = false;
+                extractBtn.textContent = '🚀 Extract & Send to Slack';
+            }
+        });
+
+        window.addEventListener('load', () => transcriptEl.focus());
+    </script>
+</body>
+</html>
