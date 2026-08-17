@@ -14,7 +14,8 @@ CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY", "")
 
 @app.get("/")
 async def root():
-    return FileResponse("public/index.html")
+    """Serve test page"""
+    return FileResponse("public/test.html")
 
 @app.post("/api/extract")
 async def extract(transcript: str = Form(...), webhook_url: Optional[str] = Form(None)):
