@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -61,9 +61,11 @@
             testBtn.disabled = true;
             testBtn.textContent = '🔄 Testing...';
             try {
-                const formData = new FormData();
-                if (webhookUrl) formData.append('webhook_url', webhookUrl);
-                const response = await fetch('/api/test', {method: 'POST', body: formData});
+                const response = await fetch('/api/test', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({webhook_url: webhookUrl || null})
+                });
                 const data = await response.json();
                 statusEl.classList.remove('hidden');
                 if (data.success) {
@@ -97,10 +99,11 @@
             statusEl.classList.add('hidden');
             resultsEl.classList.add('hidden');
             try {
-                const formData = new FormData();
-                formData.append('transcript', transcript);
-                if (webhookUrl) formData.append('webhook_url', webhookUrl);
-                const response = await fetch('/api/extract', {method: 'POST', body: formData});
+                const response = await fetch('/api/extract', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({transcript: transcript, webhook_url: webhookUrl || null})
+                });
                 const data = await response.json();
                 if (data.success) {
                     statusEl.classList.remove('hidden');

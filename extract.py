@@ -1,4 +1,4 @@
-﻿import os
+import os
 from anthropic import Anthropic
 
 # Initialize client with API key from environment
@@ -51,9 +51,19 @@ Return ONLY valid JSON, no other text."""
         # Parse response
         response_text = message.content[0].text
 
-        # Try to parse as JSON
-        import json
-        result = json.loads(response_text)
+        # Try to parse as JSON.
+        # Claude a veces envuelve el JSON en un bloque ```json ... ```
+        # o agrega texto antes/despues. Extraemos el objeto JSON real.
+        import json, re
+        cleaned = response_text.strip()
+        fence = re.search(r"```(?:json)?\s*(.*?)```", cleaned, re.DOTALL)
+        if fence:
+            cleaned = fence.group(1).strip()
+        else:
+            start, end = cleaned.find("{"), cleaned.rfind("}")
+            if start != -1 and end > start:
+                cleaned = cleaned[start:end + 1]
+        result = json.loads(cleaned)
 
         return {
             "success": True,

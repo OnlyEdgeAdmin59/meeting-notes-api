@@ -1,7 +1,8 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
+from typing import Optional
 import os
 import requests
 from extract import extract_action_items, format_slack_message
@@ -16,7 +17,10 @@ SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "")
 
 class ExtractRequest(BaseModel):
     transcript: str
-    webhook_url: str = None
+    webhook_url: Optional[str] = None
+
+class TestRequest(BaseModel):
+    webhook_url: Optional[str] = None
 
 @app.get("/")
 async def root():
@@ -62,8 +66,8 @@ async def extract(request: ExtractRequest):
     }
 
 @app.post("/api/test")
-async def test_webhook(webhook_url: str = None):
-    webhook = webhook_url or SLACK_WEBHOOK_URL
+async def test_webhook(request: Optional[TestRequest] = None):
+    webhook = (request.webhook_url if request else None) or SLACK_WEBHOOK_URL
 
     if not webhook:
         return {"success": False, "error": "No webhook URL"}
