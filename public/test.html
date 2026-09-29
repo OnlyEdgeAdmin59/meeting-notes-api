@@ -8,10 +8,15 @@
     <div class="max-w-2xl mx-auto p-8">
         <h1 class="text-4xl font-bold text-center text-blue-600 mb-2">Meeting Notes Extractor</h1>
         
-        <form onsubmit="handleSubmit(event)" class="bg-white rounded-lg shadow p-8">
+        <form id="extractForm" class="bg-white rounded-lg shadow p-8">
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">API Key</label>
+                <input type="password" id="api_key" autocomplete="off" placeholder="Your NoteMeeting API key" class="w-full border border-gray-300 rounded px-4 py-2" required>
+            </div>
+
             <div class="mb-6">
                 <label class="block text-gray-700 font-semibold mb-2">Slack Webhook URL</label>
-                <input type="text" id="webhook_url" placeholder="https://hooks.slack.com/services/..." class="w-full border border-gray-300 rounded px-4 py-2">
+                <input type="text" id="webhook_url" placeholder="https://hooks.slack.com/services/..." class="w-full border border-gray-300 rounded px-4 py-2" required>
             </div>
 
             <div class="mb-6">
@@ -25,36 +30,6 @@
         </form>
     </div>
 
-    <script>
-        async function handleSubmit(event) {
-            event.preventDefault();
-            const transcript = document.getElementById('transcript').value;
-            const webhook_url = document.getElementById('webhook_url').value;
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = '<p class="text-blue-600">Processing...</p>';
-
-            try {
-                const response = await fetch('/api/extract', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({transcript, webhook_url})
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    let html = '<div class="bg-green-100 text-green-700 px-4 py-3 rounded"><p class="font-bold mb-2">✅ Success!</p><p><strong>Summary:</strong> ' + data.summary + '</p><ul class="list-disc pl-5 mt-2">';
-                    data.action_items.forEach(item => {
-                        html += '<li>' + item.task + ' (Owner: ' + item.owner + ')</li>';
-                    });
-                    html += '</ul></div>';
-                    resultDiv.innerHTML = html;
-                } else {
-                    resultDiv.innerHTML = '<div class="bg-red-100 text-red-700 px-4 py-3 rounded">❌ Error: ' + data.error + '</div>';
-                }
-            } catch (error) {
-                resultDiv.innerHTML = '<div class="bg-red-100 text-red-700 px-4 py-3 rounded">❌ Error: ' + error.message + '</div>';
-            }
-        }
-    </script>
+    <script src="/static/test.js"></script>
 </body>
 </html>

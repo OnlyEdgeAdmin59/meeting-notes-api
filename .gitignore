@@ -1,0 +1,23 @@
+# Secretos: nunca al repo (usar variables de entorno)
+.env
+*.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*secret*
+*secrets*
+*credentials*
+*token*
+
+# Base de datos local (SQLite)
+*.db
+*.sqlite3
+
+# Python / entorno local
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
