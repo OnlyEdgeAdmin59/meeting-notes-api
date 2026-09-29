@@ -98,3 +98,20 @@ def test_legacy_key_not_saved_and_no_limit(client):
 def test_bad_override_webhook_still_rejected_for_db_client(db_client):
     r = db_client.post("/api/extract", json={"transcript": "hola", "webhook_url": "https://evil.example/x"})
     assert r.status_code == 400
+
+
+def test_basic_plan_capped_at_6(client, monkeypatch):
+    c, key = db.create_client("Basico", GOOD_WEBHOOK)
+    monkeypatch.setattr(main, "extract_action_items", lambda t: {"success": True, "action_items": [], "summary": "s"})
+    codes = [client.post("/api/extract", json={"transcript": "a"}, headers={"X-API-Key": key}).status_code
+             for _ in range(7)]
+    assert codes == [200] * 6 + [429]
+
+
+def test_unlimited_plan_has_no_cap(client, monkeypatch):
+    c, key = db.create_client("Ilimitado", GOOD_WEBHOOK, monthly_limit=None)
+    monkeypatch.setattr(main, "extract_action_items", lambda t: {"success": True, "action_items": [], "summary": "s"})
+    for _ in range(9):
+        assert client.post("/api/extract", json={"transcript": "a"}, headers={"X-API-Key": key}).status_code == 200
+    me = client.get("/api/me", headers={"X-API-Key": key}).json()
+    assert me["monthly_limit"] is None and me["meetings_this_month"] == 9

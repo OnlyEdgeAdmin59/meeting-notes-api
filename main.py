@@ -168,7 +168,7 @@ def _process(ctx: ClientCtx, transcript: str, webhook_override: Optional[str]):
     if ctx.id is not None and ctx.monthly_limit is not None:
         if db.meetings_this_month(ctx.id) >= ctx.monthly_limit:
             return _error(f"Monthly limit reached ({ctx.monthly_limit} meetings). "
-                          "Contact support to upgrade.", 429)
+                          "Upgrade to the Unlimited plan to keep going.", 429)
 
     extraction = extract_action_items(transcript)
     if not extraction["success"]:

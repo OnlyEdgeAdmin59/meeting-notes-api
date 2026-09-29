@@ -27,3 +27,16 @@ def test_new_key_rotates(capsys):
     admin.main(["new-key", "1"])
     new = capsys.readouterr().out.split(": ")[1].split()[0]
     assert db.find_client_by_key(old) is None and db.find_client_by_key(new) is not None
+
+
+def test_default_plan_is_6_and_unlimited(capsys):
+    admin.main(["add", "Basico", GOOD_WEBHOOK])
+    k1 = capsys.readouterr().out.split("cliente): ")[1].strip()
+    admin.main(["add", "Pro", GOOD_WEBHOOK, "--unlimited"])
+    k2 = capsys.readouterr().out.split("cliente): ")[1].strip()
+    assert db.find_client_by_key(k1).monthly_limit == 6
+    assert db.find_client_by_key(k2).monthly_limit is None
+    admin.main(["set-limit", "1", "ilimitado"])
+    assert db.find_client_by_key(k1).monthly_limit is None
+    admin.main(["set-limit", "1", "6"])
+    assert db.find_client_by_key(k1).monthly_limit == 6

@@ -6,7 +6,7 @@ const I18N = {
         or: 'or paste it', extract: 'Extract & send to Slack', summary: 'Summary', tasks: 'Action items',
         decisions: 'Decisions', processing: 'Processing...', testing: 'Testing...', ok: 'Slack connection OK',
         sent: 'Sent to Slack', slackFail: 'Extracted, but sending to Slack failed', empty: 'Upload a file or paste a transcript',
-        none: 'No action items found', usage: (u, l) => `${u} of ${l} meetings used this month`
+        none: 'No action items found', usage: (u, l) => `${u} of ${l} meetings used this month`, unlimited: (u) => `Unlimited plan · ${u} meetings this month`
     },
     es: {
         tagline: 'Convierte tus reuniones en tareas que sí se cumplen', apiKey: 'API Key',
@@ -15,7 +15,7 @@ const I18N = {
         or: 'o pégala', extract: 'Extraer y enviar a Slack', summary: 'Resumen', tasks: 'Tareas',
         decisions: 'Decisiones', processing: 'Procesando...', testing: 'Probando...', ok: 'Conexión con Slack OK',
         sent: 'Enviado a Slack', slackFail: 'Se extrajo, pero falló el envío a Slack', empty: 'Sube un archivo o pega una transcripción',
-        none: 'No se encontraron tareas', usage: (u, l) => `${u} de ${l} reuniones usadas este mes`
+        none: 'No se encontraron tareas', usage: (u, l) => `${u} de ${l} reuniones usadas este mes`, unlimited: (u) => `Plan Ilimitado · ${u} reuniones este mes`
     }
 };
 const LANG = (navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en';
@@ -40,7 +40,8 @@ async function loadUsage() {
         const r = await fetch('/api/me', {headers: {'X-API-Key': key()}});
         if (!r.ok) return;
         const d = await r.json();
-        $('usage').textContent = d.monthly_limit ? T.usage(d.meetings_this_month, d.monthly_limit) : '';
+        if (d.meetings_this_month === null) { $('usage').textContent = ''; return; }
+        $('usage').textContent = d.monthly_limit ? T.usage(d.meetings_this_month, d.monthly_limit) : T.unlimited(d.meetings_this_month);
     } catch (e) { /* sin uso visible */ }
 }
 $('apiKey').addEventListener('change', loadUsage);

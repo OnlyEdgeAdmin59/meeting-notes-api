@@ -15,7 +15,7 @@ from sqlalchemy import (Boolean, Date, DateTime, ForeignKey, Integer, String, Te
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 DEFAULT_URL = "sqlite:///./notemeeting.db"
-DEFAULT_MONTHLY_LIMIT = 20
+DEFAULT_MONTHLY_LIMIT = 6  # plan Básico; None = plan Ilimitado
 
 
 def _utcnow() -> datetime:
@@ -32,7 +32,7 @@ class Client(Base):
     name: Mapped[str] = mapped_column(String(200))
     api_key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     webhook_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    monthly_limit: Mapped[int] = mapped_column(Integer, default=DEFAULT_MONTHLY_LIMIT)
+    monthly_limit: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_digest_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
@@ -111,7 +111,7 @@ def new_api_key() -> str:
     return "nm_" + secrets.token_urlsafe(32)
 
 
-def create_client(name: str, webhook_url: Optional[str], monthly_limit: int = DEFAULT_MONTHLY_LIMIT):
+def create_client(name: str, webhook_url: Optional[str], monthly_limit: Optional[int] = DEFAULT_MONTHLY_LIMIT):
     """Crea un cliente y devuelve (client, api_key). La key solo se ve esta vez."""
     api_key = new_api_key()
     with session() as s:
